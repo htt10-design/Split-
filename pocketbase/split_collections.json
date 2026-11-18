@@ -1,0 +1,284 @@
+[
+  {
+    "id": "pbc_split_groups",
+    "name": "split_groups",
+    "type": "base",
+    "listRule": "@request.auth.id != '' && split_members_via_group.user ?= @request.auth.id",
+    "viewRule": "@request.auth.id != '' && split_members_via_group.user ?= @request.auth.id",
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "fields": [
+      {
+        "name": "name",
+        "type": "text",
+        "required": true,
+        "max": 100
+      },
+      {
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false,
+        "hidden": false,
+        "system": false
+      },
+      {
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true,
+        "hidden": false,
+        "system": false
+      }
+    ],
+    "indexes": []
+  },
+  {
+    "id": "pbc_split_members",
+    "name": "split_members",
+    "type": "base",
+    "listRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id",
+    "viewRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id",
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "fields": [
+      {
+        "name": "group",
+        "type": "relation",
+        "collectionId": "pbc_split_groups",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "required": true,
+        "cascadeDelete": true
+      },
+      {
+        "name": "user",
+        "type": "relation",
+        "collectionId": "_pb_users_auth_",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "required": true,
+        "cascadeDelete": true
+      },
+      {
+        "name": "display_name",
+        "type": "text",
+        "required": true,
+        "max": 50
+      },
+      {
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false,
+        "hidden": false,
+        "system": false
+      },
+      {
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true,
+        "hidden": false,
+        "system": false
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_split_members_group_user ON split_members (`group`, user)"
+    ]
+  },
+  {
+    "id": "pbc_split_settlements",
+    "name": "split_settlements",
+    "type": "base",
+    "listRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id",
+    "viewRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id",
+    "createRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id && @request.body.created_by = @request.auth.id",
+    "updateRule": null,
+    "deleteRule": null,
+    "fields": [
+      {
+        "name": "group",
+        "type": "relation",
+        "collectionId": "pbc_split_groups",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "required": true,
+        "cascadeDelete": true
+      },
+      {
+        "name": "from_user",
+        "type": "relation",
+        "collectionId": "_pb_users_auth_",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "required": false,
+        "cascadeDelete": false
+      },
+      {
+        "name": "to_user",
+        "type": "relation",
+        "collectionId": "_pb_users_auth_",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "required": false,
+        "cascadeDelete": false
+      },
+      {
+        "name": "amount_cents",
+        "type": "number",
+        "onlyInt": true,
+        "min": 0,
+        "max": 100000000,
+        "required": false
+      },
+      {
+        "name": "note",
+        "type": "text",
+        "max": 200
+      },
+      {
+        "name": "created_by",
+        "type": "relation",
+        "collectionId": "_pb_users_auth_",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "required": true,
+        "cascadeDelete": false
+      },
+      {
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false,
+        "hidden": false,
+        "system": false
+      },
+      {
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true,
+        "hidden": false,
+        "system": false
+      }
+    ],
+    "indexes": []
+  },
+  {
+    "id": "pbc_split_expenses",
+    "name": "split_expenses",
+    "type": "base",
+    "listRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id",
+    "viewRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id",
+    "createRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id && @request.body.created_by = @request.auth.id && (@collection.split_members:payer.group ?= group && @collection.split_members:payer.user ?= @request.body.paid_by) && (@request.body.settlement:isset = false || @request.body.settlement = '')",
+    "updateRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id && settlement = '' && @request.body.group:changed = false && @request.body.created_by:changed = false && (@request.body.paid_by:changed = false || (@collection.split_members:payer.group ?= group && @collection.split_members:payer.user ?= @request.body.paid_by)) && (@request.body.settlement:changed = false || @request.body.settlement.group = group)",
+    "deleteRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id && settlement = ''",
+    "fields": [
+      {
+        "name": "group",
+        "type": "relation",
+        "collectionId": "pbc_split_groups",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "required": true,
+        "cascadeDelete": true
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "required": true,
+        "max": 200
+      },
+      {
+        "name": "amount_cents",
+        "type": "number",
+        "onlyInt": true,
+        "min": 1,
+        "max": 10000000,
+        "required": true
+      },
+      {
+        "name": "paid_by",
+        "type": "relation",
+        "collectionId": "_pb_users_auth_",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "required": true,
+        "cascadeDelete": false
+      },
+      {
+        "name": "payer_share",
+        "type": "number",
+        "onlyInt": true,
+        "min": 0,
+        "max": 100,
+        "required": false
+      },
+      {
+        "name": "category",
+        "type": "select",
+        "values": [
+          "Lebensmittel",
+          "Drogerie",
+          "Haushalt",
+          "Wohnen",
+          "Restaurant",
+          "Freizeit",
+          "Urlaub",
+          "Transport",
+          "Geschenke",
+          "Sonstiges"
+        ],
+        "maxSelect": 1,
+        "required": true
+      },
+      {
+        "name": "date",
+        "type": "text",
+        "required": true,
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+        "max": 10
+      },
+      {
+        "name": "created_by",
+        "type": "relation",
+        "collectionId": "_pb_users_auth_",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "required": true,
+        "cascadeDelete": false
+      },
+      {
+        "name": "settlement",
+        "type": "relation",
+        "collectionId": "pbc_split_settlements",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "required": false,
+        "cascadeDelete": false
+      },
+      {
+        "name": "created",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": false,
+        "hidden": false,
+        "system": false
+      },
+      {
+        "name": "updated",
+        "type": "autodate",
+        "onCreate": true,
+        "onUpdate": true,
+        "hidden": false,
+        "system": false
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_split_expenses_open ON split_expenses (`group`, settlement)"
+    ]
+  }
+]

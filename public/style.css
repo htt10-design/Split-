@@ -231,3 +231,10 @@ legend { font-size: .85rem; color: var(--muted); font-weight: 500; margin-bottom
   background: var(--text); color: var(--bg); padding: .6rem 1rem; border-radius: 10px; font-size: .9rem;
   max-width: calc(100% - 32px);
 }
+
+.setup-error {
+  background: var(--surface); border-left: 4px solid var(--danger); border-radius: 10px;
+  padding: .9rem 1rem; margin: 0; font-size: .9rem; white-space: pre-line;
+}
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.live-dot.on { background: #22c55e; }

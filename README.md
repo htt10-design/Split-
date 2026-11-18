@@ -1,127 +1,133 @@
 # Split 💸
 
-Eine schlanke, selbst gehostete App, mit der zwei Personen gemeinsame Ausgaben eintragen und
-am Monatsende abrechnen, ganz ohne gemeinsames Konto.
+Eine schlanke App, mit der zwei Personen gemeinsame Ausgaben eintragen und am Monatsende abrechnen,
+ganz ohne gemeinsames Konto. Backend ist die bestehende **PocketBase (SGS-Plattform)**, die App selbst
+besteht nur aus statischen Dateien (HTML/CSS/JS) und hat keine Abhängigkeiten.
 
-- **Schnell eintragen:** Betrag, wofür, wer bezahlt hat, fertig (Standard: 50/50, heute, eigene Person)
+- **Schnell eintragen:** Betrag, wofür, fertig (Standard: 50/50, heute, ich habe bezahlt)
 - **Flexible Aufteilung:** Halbe-halbe · nur für die andere Person · individuell (z.B. 70/30)
-- **Live-Kontostand:** „Du schuldest X 23,40 €“ bzw. „X schuldet dir …“
-- **Abrechnen:** ein Klick schließt alle offenen Ausgaben ab, danach startet ihr wieder bei 0
-- **Verlauf:** alle bisherigen Abrechnungen inkl. Details und Kategorie-Übersicht
-- **CSV-Export** aller Ausgaben
-- **Als App installierbar** (PWA): im Browser „Zum Home-Bildschirm“ wählen, dann läuft sie wie eine native App
-- Hell/Dunkel-Modus automatisch, optimiert fürs Handy
+- **Live-Kontostand:** „Du schuldest X 23,40 €“, und trägt die andere Person etwas ein, aktualisiert sich die Anzeige sofort (PocketBase Realtime, grüner Punkt oben)
+- **Abrechnen:** ein Klick schließt alle offenen Ausgaben ab (atomar), danach startet ihr wieder bei 0
+- **Verlauf** aller Abrechnungen mit Details, **CSV-Export**
+- **Als App installierbar** (PWA), Hell/Dunkel-Modus, fürs Handy optimiert
 
-**Technik:** Node.js (≥ 22.13) mit eingebautem SQLite, **keine npm-Abhängigkeiten**.
-Die gesamte Datenbank ist eine einzige Datei (`split.db`).
+```
+public/                         die komplette App (statisch)
+  config.js                     ← API-URL der PocketBase
+pocketbase/split_collections.json   Collections + API-Regeln zum Importieren
+```
 
 ---
 
-## 1. Schnellstart mit Docker (auf dem Server)
+## 1. PocketBase einrichten (Admin, intern über Tailscale)
+
+Admin-UI: `https://heimserver.tail8f2780.ts.net/_/`
+
+### a) Collections importieren
+**Settings → Import collections** → Inhalt von [`pocketbase/split_collections.json`](pocketbase/split_collections.json)
+einfügen → *Review* → *Confirm*. Die Option „Delete missing“ darf **nicht** aktiv sein, sonst wären die
+Collections der anderen Apps betroffen.
+
+Es werden vier Collections mit dem Präfix `split_` angelegt:
+
+| Collection          | Inhalt                                             |
+|---------------------|----------------------------------------------------|
+| `split_groups`      | ein „Haushalt“ (ihr beide)                         |
+| `split_members`     | wer gehört zum Haushalt + Anzeigename              |
+| `split_expenses`    | die Ausgaben                                       |
+| `split_settlements` | abgeschlossene Abrechnungen                        |
+
+> Die Relationen zeigen auf die Auth-Collection `users` mit ihrer Standard-ID `_pb_users_auth_`.
+> Falls eure `users`-Collection eine andere ID hat (steht in der Collection unter ⚙️), die ID in der
+> JSON-Datei vor dem Import per Suchen/Ersetzen anpassen.
+
+### b) Batch-API aktivieren (für „Abrechnen“)
+**Settings → Application → Batch API**: aktivieren, *Max allowed batch requests* auf z.B. **500** setzen.
+Eine Abrechnung = 1 Request + 1 pro offener Ausgabe. Alles läuft in **einer** Transaktion: Entweder wird
+komplett abgerechnet oder gar nichts.
+
+### c) Euch beide eintragen
+1. Beide Benutzer existieren in `users` (Selbstregistrierung ist gesperrt, also über den Admin anlegen).
+2. `split_groups` → *New record*: Name z.B. „Wir“.
+3. `split_members` → zwei Einträge: jeweils `group` = dieser Haushalt, `user` = Person, `display_name` = Anzeigename.
+
+Fertig. Login in der App erfolgt mit E-Mail + Passwort aus `users`.
+
+### API-Regeln (Kurzfassung)
+
+Alle Regeln setzen `@request.auth.id != ''` voraus **und** prüfen zusätzlich, dass der eingeloggte Benutzer
+Mitglied des jeweiligen Haushalts ist. Andere Plattform-Benutzer sehen also nichts.
+
+| Collection          | list / view | create | update | delete |
+|---------------------|-------------|--------|--------|--------|
+| `split_groups`      | Mitglied    | nur Admin | nur Admin | nur Admin |
+| `split_members`     | Mitglied    | nur Admin | nur Admin | nur Admin |
+| `split_expenses`    | Mitglied    | Mitglied; `created_by` = ich; Zahler ist Mitglied | Mitglied, nur solange **nicht abgerechnet**; Haushalt/Ersteller unveränderbar | Mitglied, nur solange nicht abgerechnet |
+| `split_settlements` | Mitglied    | Mitglied; `created_by` = ich | nur Admin | nur Admin |
+
+„nur Admin“ heißt: Regel ist **gesperrt** (`null`, das Schloss-Symbol in der Admin-UI), also nicht leer
+und nicht öffentlich. Leere Regeln (= öffentlich) gibt es keine.
+
+Getestet gegen PocketBase v0.40.6 (u.a.: Fremde sehen/ändern nichts, falscher Zahler/Ersteller wird
+abgelehnt, abgerechnete Ausgaben sind gesperrt, Abrechnung wird bei Fehler komplett zurückgerollt).
+
+---
+
+## 2. App ausliefern (öffentlich, ohne Tailscale-Client)
+
+Die App sind nur die Dateien in `public/`. Sie spricht direkt mit der öffentlichen API
+`https://heimserver.tail8f2780.ts.net:10000` (eingetragen in `public/config.js`).
+Dafür gibt es drei Wege:
+
+### Variante A: über denselben Funnel wie die API (empfohlen)
+Den Ordner `public/` auf dem Heimserver ablegen und zusätzlich zu `/api` unter einem eigenen Pfad freigeben:
 
 ```bash
-git clone https://github.com/htt10-design/Split-.git split
-cd split
-cp .env.example .env
-nano .env            # Namen + Passwörter für euch beide setzen
-docker compose up -d --build
+git clone https://github.com/htt10-design/Split-.git /opt/split
+sudo tailscale funnel --bg --https=10000 --set-path=/split /opt/split/public
 ```
 
-Die App läuft jetzt auf dem Server unter `http://127.0.0.1:3000` (absichtlich nur lokal).
-Wie sie von außen erreichbar wird, steht im nächsten Abschnitt.
+Dann ist die App erreichbar unter **`https://heimserver.tail8f2780.ts.net:10000/split/`**
+(mit `/` am Ende). Kein weiterer Dienst nötig, und Updates gehen per `git pull`.
 
-Passwort ändern: in `.env` anpassen und `docker compose up -d` ausführen. Die Person wird dann
-auf allen Geräten abgemeldet.
+### Variante B: GitHub Pages
+Repo → Settings → Pages → Branch wählen, Ordner `/public`. Hinweis: Bei privaten Repos geht das nur mit
+einem kostenpflichtigen GitHub-Plan, und die API-Adresse steht dann öffentlich im Code.
 
-## 2. Zugriff von außen, ohne Tailscale
+### Variante C: beliebiger anderer Webspace
+Einfach den Inhalt von `public/` hochladen (Netlify, Cloudflare Pages, …).
 
-Deine Freundin soll die App einfach über eine normale Adresse wie `https://split.deine-domain.de`
-im Browser öffnen können. Dafür gibt es zwei Wege:
+> CORS: PocketBase erlaubt standardmäßig alle Origins. Falls die Plattform mit `--origins` gestartet wird,
+> muss die Adresse der App dort ergänzt werden (bei Variante A nicht nötig, gleiche Origin).
 
-### Variante A: Cloudflare Tunnel (empfohlen)
-
-✅ Keine Portfreigabe am Router · ✅ automatisch HTTPS · ✅ kostenlos · ✅ IP des Servers bleibt verborgen
-➖ Du brauchst eine eigene Domain, die bei Cloudflare verwaltet wird (ab ca. 1 €/Jahr, z.B. `.de` oder `.xyz`)
-
-1. Domain bei Cloudflare hinzufügen (kostenloser Plan reicht).
-2. Im Cloudflare-Dashboard: **Zero Trust → Networks → Tunnels → Create a tunnel** → Typ *Cloudflared*.
-3. Den angezeigten **Token** kopieren und in `.env` bei `CLOUDFLARE_TUNNEL_TOKEN=` eintragen.
-4. Im Tunnel unter **Public Hostname** hinzufügen:
-   - Subdomain: `split`, Domain: `deine-domain.de`
-   - Service: `HTTP` → `split:3000`
-5. Starten:
-   ```bash
-   docker compose --profile tunnel up -d
-   ```
-
-Fertig, die App ist unter `https://split.deine-domain.de` erreichbar.
-
-> **Optional, noch mehr Sicherheit:** Unter *Zero Trust → Access → Applications* lässt sich davor
-> eine zusätzliche Hürde schalten, z.B. „nur diese zwei E-Mail-Adressen“ (Login per Code an die E-Mail).
-
-### Variante B: Portfreigabe + Caddy (eigener Reverse-Proxy)
-
-Falls du keine Cloudflare-Domain willst: Port 80/443 am Router auf den Server weiterleiten,
-eine (Dyn)DNS-Adresse einrichten und [Caddy](https://caddyserver.com) davor setzen.
-Caddy holt sich das HTTPS-Zertifikat automatisch. Beispiel-`Caddyfile`:
-
-```
-split.deine-domain.de {
-    reverse_proxy 127.0.0.1:3000
-}
-```
-
-In `.env` muss dabei `TRUST_PROXY=1` stehen (Standard).
-
-> ⚠️ Die App bitte **nie ohne HTTPS** ins Internet stellen, sonst gehen Passwörter im Klartext übers Netz.
+---
 
 ## 3. Auf dem Handy installieren
 
-- **iPhone (Safari):** Adresse öffnen → Teilen-Symbol → „Zum Home-Bildschirm“
-- **Android (Chrome):** Adresse öffnen → ⋮ → „App installieren“ / „Zum Startbildschirm hinzufügen“
+- **iPhone (Safari):** App-Adresse öffnen → Teilen → „Zum Home-Bildschirm“
+- **Android (Chrome):** App-Adresse öffnen → ⋮ → „App installieren“
 
-Der Login bleibt 180 Tage gespeichert.
+Die Anmeldung wird beim Öffnen automatisch verlängert (Token-Refresh).
 
-## 4. Backup
-
-Die Daten liegen im Docker-Volume `split-data`. Ein Backup als Datei:
+## 4. Lokal entwickeln
 
 ```bash
-docker compose exec split sh -c "rm -f /data/backup.db && node -e \"new (require('node:sqlite').DatabaseSync)('/data/split.db').exec('VACUUM INTO \\'/data/backup.db\\'')\""
-docker cp split:/data/backup.db ./split-backup-$(date +%F).db
+cd public && python3 -m http.server 8080   # http://localhost:8080
 ```
-
-Zusätzlich bekommst du über das Menü (⋯) → **CSV exportieren** jederzeit alle Ausgaben als Tabelle.
-
-## 5. Lokale Entwicklung (ohne Docker)
-
-```bash
-cp .env.example .env   # PORT=3000, TRUST_PROXY=0
-npm run dev            # http://localhost:3000
-```
+Für eine lokale PocketBase `apiUrl` in `public/config.js` anpassen.
 
 ---
 
 ## So wird gerechnet
 
-Jede Ausgabe speichert, wer bezahlt hat und welchen Anteil (in %) der Zahler **selbst** trägt:
+Jede Ausgabe speichert, wer bezahlt hat und welchen Anteil (%) der Zahler **selbst** trägt (`payer_share`):
 
-| Aufteilung          | Anteil Zahler | Die andere Person schuldet |
+| Aufteilung          | `payer_share` | Die andere Person schuldet |
 |---------------------|---------------|----------------------------|
-| Halbe-halbe         | 50 %          | 50 % des Betrags           |
-| Nur für die andere  | 0 %           | 100 % des Betrags          |
-| Individuell (70/30) | 70 %          | 30 % des Betrags           |
+| Halbe-halbe         | 50            | 50 % des Betrags           |
+| Nur für die andere  | 0             | 100 % des Betrags          |
+| Individuell (70/30) | 70            | 30 % des Betrags           |
 
-Alle offenen Ausgaben werden verrechnet, und am Ende bleibt **eine** Zahl: wer wem wie viel überweist.
-Nach der Überweisung auf „Abrechnen“ tippen, dann wandern die Ausgaben ins Archiv.
-
-## Projektstruktur
-
-```
-src/
-  server.js   HTTP-Server + API
-  db.js       SQLite-Schema
-  auth.js     Login, Sessions, Passwort-Hashing (scrypt), Brute-Force-Schutz
-public/       Oberfläche (HTML/CSS/JS, PWA-Manifest, Service Worker)
-Dockerfile, docker-compose.yml
-```
+Alle offenen Ausgaben werden verrechnet, am Ende bleibt **eine** Zahl: wer wem wie viel überweist.
+Nach der Überweisung „Abrechnen“ tippen: Es entsteht ein Eintrag in `split_settlements`, und alle
+offenen Ausgaben werden ihm zugeordnet (`settlement`). Beträge werden in Cent gespeichert (`amount_cents`).
