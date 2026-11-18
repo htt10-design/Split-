@@ -10,12 +10,14 @@
     "deleteRule": null,
     "fields": [
       {
+        "id": "text_split_grp_name",
         "name": "name",
         "type": "text",
         "required": true,
         "max": 100
       },
       {
+        "id": "autodate_split_grp_created",
         "name": "created",
         "type": "autodate",
         "onCreate": true,
@@ -24,6 +26,7 @@
         "system": false
       },
       {
+        "id": "autodate_split_grp_updated",
         "name": "updated",
         "type": "autodate",
         "onCreate": true,
@@ -45,6 +48,7 @@
     "deleteRule": null,
     "fields": [
       {
+        "id": "relation_split_mem_group",
         "name": "group",
         "type": "relation",
         "collectionId": "pbc_split_groups",
@@ -54,6 +58,7 @@
         "cascadeDelete": true
       },
       {
+        "id": "relation_split_mem_user",
         "name": "user",
         "type": "relation",
         "collectionId": "_pb_users_auth_",
@@ -63,12 +68,14 @@
         "cascadeDelete": true
       },
       {
+        "id": "text_split_mem_display_name",
         "name": "display_name",
         "type": "text",
         "required": true,
         "max": 50
       },
       {
+        "id": "autodate_split_mem_created",
         "name": "created",
         "type": "autodate",
         "onCreate": true,
@@ -77,6 +84,7 @@
         "system": false
       },
       {
+        "id": "autodate_split_mem_updated",
         "name": "updated",
         "type": "autodate",
         "onCreate": true,
@@ -100,6 +108,7 @@
     "deleteRule": null,
     "fields": [
       {
+        "id": "relation_split_stl_group",
         "name": "group",
         "type": "relation",
         "collectionId": "pbc_split_groups",
@@ -109,6 +118,7 @@
         "cascadeDelete": true
       },
       {
+        "id": "relation_split_stl_from_user",
         "name": "from_user",
         "type": "relation",
         "collectionId": "_pb_users_auth_",
@@ -118,6 +128,7 @@
         "cascadeDelete": false
       },
       {
+        "id": "relation_split_stl_to_user",
         "name": "to_user",
         "type": "relation",
         "collectionId": "_pb_users_auth_",
@@ -127,6 +138,7 @@
         "cascadeDelete": false
       },
       {
+        "id": "number_split_stl_amount_cents",
         "name": "amount_cents",
         "type": "number",
         "onlyInt": true,
@@ -135,11 +147,13 @@
         "required": false
       },
       {
+        "id": "text_split_stl_note",
         "name": "note",
         "type": "text",
         "max": 200
       },
       {
+        "id": "relation_split_stl_created_by",
         "name": "created_by",
         "type": "relation",
         "collectionId": "_pb_users_auth_",
@@ -149,6 +163,7 @@
         "cascadeDelete": false
       },
       {
+        "id": "autodate_split_stl_created",
         "name": "created",
         "type": "autodate",
         "onCreate": true,
@@ -157,6 +172,7 @@
         "system": false
       },
       {
+        "id": "autodate_split_stl_updated",
         "name": "updated",
         "type": "autodate",
         "onCreate": true,
@@ -178,6 +194,7 @@
     "deleteRule": "@request.auth.id != '' && group.split_members_via_group.user ?= @request.auth.id && settlement = ''",
     "fields": [
       {
+        "id": "relation_split_exp_group",
         "name": "group",
         "type": "relation",
         "collectionId": "pbc_split_groups",
@@ -187,12 +204,14 @@
         "cascadeDelete": true
       },
       {
+        "id": "text_split_exp_description",
         "name": "description",
         "type": "text",
         "required": true,
         "max": 200
       },
       {
+        "id": "number_split_exp_amount_cents",
         "name": "amount_cents",
         "type": "number",
         "onlyInt": true,
@@ -201,6 +220,7 @@
         "required": true
       },
       {
+        "id": "relation_split_exp_paid_by",
         "name": "paid_by",
         "type": "relation",
         "collectionId": "_pb_users_auth_",
@@ -210,6 +230,7 @@
         "cascadeDelete": false
       },
       {
+        "id": "number_split_exp_payer_share",
         "name": "payer_share",
         "type": "number",
         "onlyInt": true,
@@ -218,6 +239,7 @@
         "required": false
       },
       {
+        "id": "select_split_exp_category",
         "name": "category",
         "type": "select",
         "values": [
@@ -236,6 +258,7 @@
         "required": true
       },
       {
+        "id": "text_split_exp_date",
         "name": "date",
         "type": "text",
         "required": true,
@@ -243,6 +266,7 @@
         "max": 10
       },
       {
+        "id": "relation_split_exp_created_by",
         "name": "created_by",
         "type": "relation",
         "collectionId": "_pb_users_auth_",
@@ -252,6 +276,7 @@
         "cascadeDelete": false
       },
       {
+        "id": "relation_split_exp_settlement",
         "name": "settlement",
         "type": "relation",
         "collectionId": "pbc_split_settlements",
@@ -261,6 +286,7 @@
         "cascadeDelete": false
       },
       {
+        "id": "autodate_split_exp_created",
         "name": "created",
         "type": "autodate",
         "onCreate": true,
@@ -269,6 +295,7 @@
         "system": false
       },
       {
+        "id": "autodate_split_exp_updated",
         "name": "updated",
         "type": "autodate",
         "onCreate": true,

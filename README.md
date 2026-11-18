@@ -25,8 +25,14 @@ Admin-UI: `https://heimserver.tail8f2780.ts.net/_/`
 
 ### a) Collections importieren
 **Settings → Import collections** → Inhalt von [`pocketbase/split_collections.json`](pocketbase/split_collections.json)
-einfügen → *Review* → *Confirm*. Die Option „Delete missing“ darf **nicht** aktiv sein, sonst wären die
-Collections der anderen Apps betroffen.
+einfügen (oder „Load from JSON file“).
+
+> ⚠️ **Unbedingt den Schalter „Merge with the existing collections“ einschalten!**
+> Ohne ihn ersetzt PocketBase *alle* Collections durch die eingefügte Liste, löscht also `users`,
+> die Collections der anderen Apps und deren Daten.
+> Kontrolle: Unter „Detected changes“ dürfen **nur vier Einträge „Added“** (`split_…`) stehen, kein „Deleted“.
+
+Dann *Review* → *Confirm and import*.
 
 Es werden vier Collections mit dem Präfix `split_` angelegt:
 
@@ -68,7 +74,7 @@ Mitglied des jeweiligen Haushalts ist. Andere Plattform-Benutzer sehen also nich
 „nur Admin“ heißt: Regel ist **gesperrt** (`null`, das Schloss-Symbol in der Admin-UI), also nicht leer
 und nicht öffentlich. Leere Regeln (= öffentlich) gibt es keine.
 
-Getestet gegen PocketBase v0.40.6 (u.a.: Fremde sehen/ändern nichts, falscher Zahler/Ersteller wird
+Getestet gegen PocketBase v0.40.6, Import über die Admin-UI (u.a.: Fremde sehen/ändern nichts, falscher Zahler/Ersteller wird
 abgelehnt, abgerechnete Ausgaben sind gesperrt, Abrechnung wird bei Fehler komplett zurückgerollt).
 
 ---
