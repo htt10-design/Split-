@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Split">
+  <title>Split</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- Login -->
+  <main id="view-login" class="view login hidden">
+    <div class="login-card">
+      <img src="/icon.svg" alt="" class="login-logo">
+      <h1>Split</h1>
+      <p class="muted">Gemeinsame Ausgaben, fair geteilt.</p>
+      <form id="login-form" autocomplete="on">
+        <label>Name<input name="name" autocomplete="username" required></label>
+        <label>Passwort<input name="password" type="password" autocomplete="current-password" required></label>
+        <p id="login-error" class="error hidden"></p>
+        <button class="btn primary block" type="submit">Anmelden</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- App -->
+  <div id="view-app" class="hidden">
+    <header class="topbar">
+      <h1>Split</h1>
+      <div class="topbar-actions">
+        <span id="me-name" class="chip"></span>
+        <button id="menu-btn" class="icon-btn" aria-label="Menü">⋯</button>
+      </div>
+      <div id="menu" class="menu hidden">
+        <a href="/api/export.csv" download>CSV exportieren</a>
+        <button id="logout-btn" type="button">Abmelden</button>
+      </div>
+    </header>
+
+    <!-- Tab: Offen -->
+    <main id="tab-open" class="tab">
+      <section class="balance-card" id="balance-card"></section>
+
+      <section class="stats" id="stats"></section>
+
+      <section>
+        <div class="section-head">
+          <h2>Offene Ausgaben</h2>
+          <button id="settle-btn" class="btn ghost small">Abrechnen</button>
+        </div>
+        <ul class="expense-list" id="expense-list"></ul>
+      </section>
+    </main>
+
+    <!-- Tab: Verlauf -->
+    <main id="tab-history" class="tab hidden">
+      <h2>Abrechnungen</h2>
+      <ul class="settlement-list" id="settlement-list"></ul>
+    </main>
+
+    <!-- Detailansicht einer Abrechnung -->
+    <main id="tab-settlement" class="tab hidden">
+      <button class="btn ghost small" id="back-btn">← Zurück</button>
+      <section class="balance-card" id="settlement-balance"></section>
+      <section class="stats" id="settlement-stats"></section>
+      <ul class="expense-list" id="settlement-expenses"></ul>
+    </main>
+
+    <button id="add-btn" class="fab" aria-label="Ausgabe hinzufügen">＋</button>
+
+    <nav class="tabbar">
+      <button data-tab="open" class="active"><span>●</span>Offen</button>
+      <button data-tab="history"><span>☰</span>Verlauf</button>
+    </nav>
+  </div>
+
+  <!-- Formular (Bottom Sheet) -->
+  <div id="sheet" class="sheet-backdrop hidden">
+    <form id="expense-form" class="sheet" autocomplete="off">
+      <div class="sheet-handle"></div>
+      <h2 id="sheet-title">Neue Ausgabe</h2>
+
+      <div class="amount-input">
+        <input name="amount" inputmode="decimal" placeholder="0,00" required aria-label="Betrag">
+        <span>€</span>
+      </div>
+
+      <label>Wofür?<input name="description" placeholder="z.B. REWE Wocheneinkauf" maxlength="200" required list="desc-suggestions"></label>
+      <datalist id="desc-suggestions"></datalist>
+
+      <fieldset>
+        <legend>Bezahlt von</legend>
+        <div class="segmented" id="paid-by"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Aufteilung</legend>
+        <div class="segmented" id="split-mode">
+          <button type="button" data-mode="half" class="active">Halbe-halbe</button>
+          <button type="button" data-mode="other" id="split-other-btn">Nur für …</button>
+          <button type="button" data-mode="custom">Individuell</button>
+        </div>
+        <div id="custom-split" class="custom-split hidden">
+          <input type="range" name="payer_share" min="0" max="100" step="5" value="50">
+          <div class="split-labels"><span id="split-label-payer"></span><span id="split-label-other"></span></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Kategorie</legend>
+        <div class="chips" id="category-chips"></div>
+      </fieldset>
+
+      <label>Datum<input name="date" type="date" required></label>
+
+      <p id="form-error" class="error hidden"></p>
+
+      <div class="sheet-actions">
+        <button type="button" class="btn danger ghost hidden" id="delete-btn">Löschen</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn ghost" id="cancel-btn">Abbrechen</button>
+        <button type="submit" class="btn primary">Speichern</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
