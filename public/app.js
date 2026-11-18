@@ -284,7 +284,8 @@ function renderExpenses(el, expenses, { editable }) {
     }
     const owed = owedByOther(e);
     const iPaid = e.paid_by === state.me.id;
-    const shareTxt = owed > 0 ? (iPaid ? `bekommst ${eur(owed)}` : `schuldest ${eur(owed)}`) : 'nur für Zahler';
+    // Grün = bekommst du, Rot = schuldest du; nichts, wenn die andere Person nichts schuldet
+    const shareTxt = owed > 0 ? eur(owed) : '';
     const shareCls = owed > 0 ? (iPaid ? 'pos' : 'neg') : '';
     const share = e.payer_share ?? 0;
     const splitTxt = share === 50 ? '50/50' : share === 0 ? `nur für ${userName(otherId(e.paid_by))}` : `${share}/${100 - share}`;
@@ -297,7 +298,7 @@ function renderExpenses(el, expenses, { editable }) {
         </div>
         <div class="right">
           <div class="amt">${eur(e.amount_cents)}</div>
-          <div class="share ${shareCls}">${shareTxt}</div>
+          <div class="share ${shareCls}" title="${owed > 0 ? (iPaid ? 'bekommst du' : 'schuldest du') : ''}">${shareTxt}</div>
         </div>
       </li>`;
   }

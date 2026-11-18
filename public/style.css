@@ -65,7 +65,7 @@
   --hero-label: #bdbdbd;
   --bar: #111111;
   --danger: #b42318;
-  --pos: #111111;
+  --pos: #1f7a4c;
   --neg: #b42318;
   --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.05);
   --fab-shadow: 0 6px 20px rgba(0,0,0,.3);
@@ -87,7 +87,7 @@
   --hero-label: #a8a8a8;
   --bar: #f2f2f2;
   --danger: #ff8b7b;
-  --pos: #ffffff;
+  --pos: #5cc48a;
   --neg: #ff8b7b;
   --shadow: none;
   --fab-shadow: 0 6px 20px rgba(0,0,0,.6);
@@ -222,7 +222,7 @@ legend { font-size: .85rem; color: var(--muted); font-weight: 500; margin-bottom
 .expense .meta, .settlement .meta { font-size: .8rem; color: var(--muted); }
 .expense .right, .settlement .right { text-align: right; font-variant-numeric: tabular-nums; }
 .expense .amt { font-weight: 650; }
-.expense .share { font-size: .78rem; }
+.expense .share { font-size: .82rem; font-weight: 600; }
 .share.pos { color: var(--pos); }
 .share.neg { color: var(--neg); }
 .empty { text-align: center; color: var(--muted); padding: 2rem 1rem; }
