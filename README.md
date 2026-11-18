@@ -83,28 +83,21 @@ abgelehnt, abgerechnete Ausgaben sind gesperrt, Abrechnung wird bei Fehler kompl
 
 Die App sind nur die Dateien in `public/`. Sie spricht direkt mit der öffentlichen API
 `https://heimserver.tail8f2780.ts.net:10000` (eingetragen in `public/config.js`).
-Dafür gibt es drei Wege:
 
-### Variante A: über denselben Funnel wie die API (empfohlen)
-Den Ordner `public/` auf dem Heimserver ablegen und zusätzlich zu `/api` unter einem eigenen Pfad freigeben:
 
-```bash
-git clone https://github.com/htt10-design/Split-.git /opt/split
-sudo tailscale funnel --bg --https=10000 --set-path=/split /opt/split/public
-```
+### GitHub Pages (eingerichtet)
+Die App liegt unter **https://htt10-design.github.io/Split-/**.
+Jeder Push auf `main` veröffentlicht den Ordner `public/` automatisch neu
+(Workflow `.github/workflows/pages.yml`). Einmalig nötig: Repo → *Settings → Pages* →
+*Source*: **GitHub Actions**.
 
-Dann ist die App erreichbar unter **`https://heimserver.tail8f2780.ts.net:10000/split/`**
-(mit `/` am Ende). Kein weiterer Dienst nötig, und Updates gehen per `git pull`.
+Port 10000 (Funnel) bleibt ausschließlich für `/api`.
 
-### Variante B: GitHub Pages
-Repo → Settings → Pages → Branch wählen, Ordner `/public`. Hinweis: Bei privaten Repos geht das nur mit
-einem kostenpflichtigen GitHub-Plan, und die API-Adresse steht dann öffentlich im Code.
-
-### Variante C: beliebiger anderer Webspace
+### Alternative: beliebiger anderer Webspace
 Einfach den Inhalt von `public/` hochladen (Netlify, Cloudflare Pages, …).
 
 > CORS: PocketBase erlaubt standardmäßig alle Origins. Falls die Plattform mit `--origins` gestartet wird,
-> muss die Adresse der App dort ergänzt werden (bei Variante A nicht nötig, gleiche Origin).
+> muss die Adresse der App dort ergänzt werden (Origin von GitHub Pages: `https://htt10-design.github.io`).
 
 ---
 
