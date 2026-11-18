@@ -182,6 +182,19 @@ $('#login-form').addEventListener('submit', async (ev) => {
 $('#logout-btn').addEventListener('click', logout);
 $('#menu-btn').addEventListener('click', (e) => { e.stopPropagation(); $('#menu').classList.toggle('hidden'); });
 document.addEventListener('click', () => $('#menu').classList.add('hidden'));
+$('#menu').addEventListener('click', (e) => e.stopPropagation()); // Menü bleibt bei Design-Auswahl offen
+
+// ---------- Design ----------
+
+function syncThemePicker() {
+  const t = window.SplitTheme?.get() || { theme: 'green', mode: 'auto' };
+  document.querySelectorAll('#theme-picker button').forEach((b) => b.classList.toggle('active', b.dataset.themeVal === t.theme));
+  document.querySelectorAll('#mode-picker button').forEach((b) => b.classList.toggle('active', b.dataset.modeVal === t.mode));
+}
+document.querySelectorAll('#theme-picker button').forEach((b) => b.addEventListener('click', () => window.SplitTheme?.set({ theme: b.dataset.themeVal })));
+document.querySelectorAll('#mode-picker button').forEach((b) => b.addEventListener('click', () => window.SplitTheme?.set({ mode: b.dataset.modeVal })));
+document.addEventListener('split-theme', syncThemePicker);
+syncThemePicker();
 
 // ---------- Saldo ----------
 
@@ -415,6 +428,7 @@ $('#settle-btn').addEventListener('click', async () => {
 // ---------- CSV-Export ----------
 
 $('#export-btn').addEventListener('click', async () => {
+  $('#menu').classList.add('hidden');
   try {
     const rows = await listAll('split_expenses', { filter: `group = ${q(state.group.id)}`, sort: 'date,created' });
     const c = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;

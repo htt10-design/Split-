@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0f766e">
+  <meta name="theme-color" content="#f4f3ee">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Split">
@@ -12,6 +12,7 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="stylesheet" href="style.css">
+  <script src="theme.js"></script>
 </head>
 <body>
   <!-- Login -->
@@ -39,6 +40,18 @@
         <button id="menu-btn" class="icon-btn" aria-label="Menü">⋯</button>
       </div>
       <div id="menu" class="menu hidden">
+        <div class="menu-section">
+          <div class="menu-label">Design</div>
+          <div class="segmented small" id="theme-picker">
+            <button type="button" data-theme-val="green"><span class="swatch green"></span>Racing Green</button>
+            <button type="button" data-theme-val="mono"><span class="swatch mono"></span>Schwarz/Weiß</button>
+          </div>
+          <div class="segmented small" id="mode-picker">
+            <button type="button" data-mode-val="auto">Auto</button>
+            <button type="button" data-mode-val="light">☀︎ Hell</button>
+            <button type="button" data-mode-val="dark">☾ Dunkel</button>
+          </div>
+        </div>
         <button id="export-btn" type="button">CSV exportieren</button>
         <button id="logout-btn" type="button">Abmelden</button>
       </div>

@@ -1,7 +1,7 @@
 // Minimaler Service Worker: macht die App installierbar und cached die Oberfläche.
 // API-Aufrufe (PocketBase) werden nie gecached.
-const CACHE = 'split-v2';
-const ASSETS = ['./', 'index.html', 'style.css', 'app.js', 'config.js', 'icon.svg', 'manifest.webmanifest'];
+const CACHE = 'split-v3';
+const ASSETS = ['./', 'index.html', 'style.css', 'app.js', 'config.js', 'theme.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
