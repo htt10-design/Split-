@@ -129,5 +129,6 @@ Jede Ausgabe speichert, wer bezahlt hat und welchen Anteil (%) der Zahler **selb
 | Individuell (70/30) | 70            | 30 % des Betrags           |
 
 Alle offenen Ausgaben werden verrechnet, am Ende bleibt **eine** Zahl: wer wem wie viel überweist.
-Nach der Überweisung „Abrechnen“ tippen: Es entsteht ein Eintrag in `split_settlements`, und alle
+Ab dem 1. eines Monats erscheint oben ein Hinweis „Abrechnung <Monat>“: Er rechnet nur die Ausgaben bis Ende des Vormonats ab (nach Ausgabedatum), Einträge aus dem laufenden Monat bleiben offen. Nach der Überweisung „Erledigt“ tippen. Der Button „Abrechnen“ in der Liste rechnet dagegen alles Offene ab.
+Beim Abrechnen gilt: Es entsteht ein Eintrag in `split_settlements`, und alle
 offenen Ausgaben werden ihm zugeordnet (`settlement`). Beträge werden in Cent gespeichert (`amount_cents`).

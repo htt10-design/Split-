@@ -323,6 +323,7 @@ async function loadOverview() {
   renderStats($('#stats'), state.balance);
   renderExpenses($('#expense-list'), expenses, { editable: true });
   $('#settle-btn').disabled = expenses.length === 0;
+  renderDueBanner();
   const uniq = [...new Set(expenses.map((e) => e.description))].slice(0, 30);
   $('#desc-suggestions').innerHTML = uniq.map((d) => `<option value="${esc(d)}">`).join('');
 }
@@ -350,8 +351,8 @@ async function loadHistory() {
       <li class="settlement" data-id="${esc(s.id)}">
         <div class="ico">✓</div>
         <div class="mid">
-          <div class="title">${created.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-          <div class="meta">${i.count} Ausgaben${i.first ? ` · ${dmy(i.first)} – ${dmy(i.last)}` : ''}${s.note ? ' · ' + esc(s.note) : ''}</div>
+          <div class="title">${esc(s.note || created.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }))}</div>
+          <div class="meta">${i.count} Ausgaben${i.first ? ` · ${dmy(i.first)} – ${dmy(i.last)}` : ''} · abgeschlossen ${created.toLocaleDateString('de-DE')}</div>
         </div>
         <div class="right">
           <div class="amt">${eur(s.amount_cents)}</div>
@@ -391,40 +392,104 @@ $('#back-btn').addEventListener('click', () => showTab('history'));
 
 // ---------- Abrechnen (atomar über die PocketBase-Batch-API) ----------
 
+/** Rechnet die übergebenen Ausgaben in einer Transaktion ab. */
+async function settleExpenses(expenses, note = '') {
+  const b = computeBalance(expenses);
+  const sid = newId();
+  const requests = [
+    {
+      method: 'POST',
+      url: '/api/collections/split_settlements/records',
+      body: {
+        id: sid, group: state.group.id, created_by: state.me.id, note,
+        from_user: b.from_user || '', to_user: b.to_user || '', amount_cents: b.amount_cents,
+      },
+    },
+    ...expenses.map((e) => ({
+      method: 'PATCH', url: `/api/collections/split_expenses/records/${e.id}`, body: { settlement: sid },
+    })),
+  ];
+  try {
+    await pb('POST', '/api/batch', { requests });
+  } catch (e) {
+    if (e.status === 403) throw new Error('Die Batch-API ist in PocketBase deaktiviert. Admin: Einstellungen → Application → „Batch API“ aktivieren.');
+    if (e.status === 400 && /max/i.test(e.message)) throw new Error('Zu viele Ausgaben für eine Abrechnung. Admin: „Max allowed batch requests“ erhöhen.');
+    throw e;
+  }
+}
+
+const summaryText = (b) => b.from_user
+  ? `${userName(b.from_user)} überweist ${userName(b.to_user)} ${eur(b.amount_cents)}`
+  : 'Ihr seid ausgeglichen.';
+
+// Alles Offene abrechnen (Button „Abrechnen“ in der Liste)
 $('#settle-btn').addEventListener('click', async () => {
   try {
     await loadOverview(); // frischer Stand, falls die andere Person gerade etwas eingetragen hat
     const b = state.balance;
     if (!b.count) return toast('Keine offenen Ausgaben.');
-    const summary = b.from_user
-      ? `${userName(b.from_user)} überweist ${userName(b.to_user)} ${eur(b.amount_cents)}`
-      : 'Ihr seid ausgeglichen.';
-    if (!confirm(`Jetzt abrechnen?\n\n${summary}\n\n${b.count} offene Ausgaben werden abgeschlossen und ins Archiv verschoben. Danach startet ihr wieder bei 0.`)) return;
-
-    const sid = newId();
-    const requests = [
-      {
-        method: 'POST',
-        url: '/api/collections/split_settlements/records',
-        body: {
-          id: sid, group: state.group.id, created_by: state.me.id,
-          from_user: b.from_user || '', to_user: b.to_user || '', amount_cents: b.amount_cents,
-        },
-      },
-      ...state.expenses.map((e) => ({
-        method: 'PATCH', url: `/api/collections/split_expenses/records/${e.id}`, body: { settlement: sid },
-      })),
-    ];
-    try {
-      await pb('POST', '/api/batch', { requests });
-    } catch (e) {
-      if (e.status === 403) throw new Error('Die Batch-API ist in PocketBase deaktiviert. Admin: Einstellungen → Application → „Batch API“ aktivieren.');
-      throw e;
-    }
+    if (!confirm(`Alle offenen Ausgaben jetzt abrechnen?\n\n${summaryText(b)}\n\n${b.count} Ausgaben werden abgeschlossen und in den Verlauf verschoben.`)) return;
+    await settleExpenses(state.expenses, 'Abrechnung ' + new Date().toLocaleDateString('de-DE'));
     toast('Abgerechnet ✓');
     await loadOverview();
   } catch (e) { toast(e.message); }
 });
+
+// ---------- Monatsabrechnung: Hinweis ab dem 1. ----------
+
+const firstOfThisMonth = () => today().slice(0, 8) + '01';
+const monthLabel = (iso) => new Date(iso.slice(0, 7) + '-15T12:00:00').toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+/** Offene Ausgaben aus vergangenen Monaten (Datum vor dem 1. des aktuellen Monats). */
+function dueExpenses() {
+  const cutoff = firstOfThisMonth();
+  return state.expenses.filter((e) => e.date < cutoff);
+}
+
+function dueLabel(due) {
+  const months = due.map((e) => e.date.slice(0, 7)).sort();
+  const first = months[0];
+  const last = months[months.length - 1];
+  if (first === last) return monthLabel(last);
+  const sameYear = first.slice(0, 4) === last.slice(0, 4);
+  const from = sameYear ? new Date(first + '-15T12:00:00').toLocaleDateString('de-DE', { month: 'long' }) : monthLabel(first);
+  return `${from} – ${monthLabel(last)}`;
+}
+
+function renderDueBanner() {
+  const el = $('#due-banner');
+  const due = dueExpenses();
+  if (!due.length) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  const b = computeBalance(due);
+  const label = dueLabel(due);
+  let text;
+  if (!b.from_user) text = 'Ihr seid ausgeglichen.';
+  else if (b.from_user === state.me.id) text = `Du überweist ${esc(userName(b.to_user))} <strong>${eur(b.amount_cents)}</strong>`;
+  else text = `${esc(userName(b.from_user))} überweist dir <strong>${eur(b.amount_cents)}</strong>`;
+  el.innerHTML = `
+    <div class="due-text">
+      <div class="due-title">Abrechnung ${esc(label)}</div>
+      <div class="due-sub">${text} · ${due.length} Ausgaben</div>
+    </div>
+    <button type="button" class="btn primary small" id="due-settle-btn">${b.from_user ? 'Erledigt' : 'Abschließen'}</button>`;
+  el.classList.remove('hidden');
+  $('#due-settle-btn').addEventListener('click', settleDue);
+}
+
+async function settleDue() {
+  try {
+    await loadOverview();
+    const due = dueExpenses();
+    if (!due.length) return;
+    const b = computeBalance(due);
+    const label = dueLabel(due);
+    const rest = state.expenses.length - due.length;
+    if (!confirm(`Abrechnung ${label} abschließen?\n\n${summaryText(b)}\n\nBitte erst bestätigen, wenn überwiesen wurde. ${due.length} Ausgaben bis Ende ${monthLabel(due.map((e) => e.date).sort().pop())} wandern in den Verlauf.${rest ? `\n${rest} Ausgaben aus dem aktuellen Monat bleiben offen.` : ''}`)) return;
+    await settleExpenses(due, label);
+    toast(`${label} abgerechnet ✓`);
+    await loadOverview();
+  } catch (e) { toast(e.message); }
+}
 
 // ---------- CSV-Export ----------
 
@@ -569,7 +634,7 @@ $('#delete-btn').addEventListener('click', async () => {
 function showSetupError(msg) {
   $('#setup-error').textContent = msg;
   $('#setup-error').classList.remove('hidden');
-  for (const id of ['#balance-card', '#stats', '#expense-list', '#settle-btn', '#add-btn']) $(id).classList.add('hidden');
+  for (const id of ['#balance-card', '#stats', '#expense-list', '#settle-btn', '#add-btn', '#due-banner']) $(id).classList.add('hidden');
 }
 
 async function startApp() {
