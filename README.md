@@ -88,8 +88,9 @@ Die App sind nur die Dateien in `public/`. Sie spricht direkt mit der öffentlic
 ### GitHub Pages (eingerichtet)
 Die App liegt unter **https://htt10-design.github.io/Split-/**.
 Jeder Push auf `main` veröffentlicht den Ordner `public/` automatisch neu
-(Workflow `.github/workflows/pages.yml`). Einmalig nötig: Repo → *Settings → Pages* →
-*Source*: **GitHub Actions**.
+(Workflow `.github/workflows/pages.yml`). Einmalig nötig:
+1. Repo → *Settings → General → Default branch*: **main**
+2. Repo → *Settings → Pages → Build and deployment → Source*: **GitHub Actions**
 
 Port 10000 (Funnel) bleibt ausschließlich für `/api`.
 
